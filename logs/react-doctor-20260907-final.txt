@@ -1,0 +1,170 @@
+
+> timelock-v@1.0.0 doctor
+> react-doctor
+
+  
+[32m✔[39m Scanned 47 files in 24.1s [~2 workers]
+✔ Scanned 47 files in 25.9s
+
+React Doctor — timelock-v
+Score: 35 / 100 Critical
+
+69 issues
+Security: 1 error, 1 warning
+Bugs: 1 error, 38 warnings
+Performance: 7 warnings
+Maintainability: 13 warnings
+Accessibility: 8 warnings
+
+⚠ react-doctor/no-vulnerable-react-server-components
+  react-doctor/no-vulnerable-react-server-components
+  package.json
+⚠ Fetch without revalidate
+  react-doctor/server-fetch-without-revalidate
+  src/app/api/ai/test-connection/route.ts:52
+✖ Side effect in GET handler
+  react-doctor/nextjs-no-side-effect-in-get-handler
+  src/app/api/bootstrap/route.ts:24
+⚠ Chained array iterations
+  react-doctor/js-combine-iterations
+  src/app/api/suggestions/route.ts:114
+⚠ React function has high control-flow complexity ×4
+  react-doctor/no-high-complexity-react-function
+  src/components/auth-form.tsx:11
+  src/components/dashboard.tsx:42
+  src/components/profile-screen.tsx:176
+  src/components/settings-screen.tsx:54
+⚠ fetch Response consumed without status check ×5
+  react-doctor/no-fetch-response-used-without-status-check
+  src/components/auth-form.tsx:36
+  src/components/dashboard.tsx:224
+  src/components/profile-screen.tsx:300
+  src/components/profile-screen.tsx:324
+  src/components/settings-screen.tsx:238
+⚠ Loading flag reset outside finally ×6
+  react-doctor/no-loading-flag-reset-outside-finally
+  src/components/auth-form.tsx:42
+  src/components/dashboard.tsx:68
+  src/components/dashboard.tsx:232
+  src/components/onboarding.tsx:35
+  src/components/profile-screen.tsx:306
+  src/components/profile-screen.tsx:330
+⚠ Non-component export in component file ×2
+  react-doctor/only-export-components
+  src/components/dashboard-shell.tsx:38
+  src/components/dashboard-shell.tsx:50
+⚠ useEffect state synchronization flashes after paint
+  react-doctor/rendering-hydration-no-flicker
+  src/components/dashboard-shell.tsx:71
+⚠ State initialized from a mount effect
+  react-doctor/no-initialize-state
+  src/components/dashboard-shell.tsx:72
+⚠ Data fetching inside an effect ×5
+  react-doctor/no-fetch-in-effect
+  src/components/dashboard-shell.tsx:194
+  src/components/dashboard.tsx:73
+  src/components/dashboard.tsx:241
+  src/components/profile-screen.tsx:205
+  src/components/settings-screen.tsx:123
+⚠ Effect promise .then sets state with no catch
+  react-doctor/no-promise-then-side-effect-in-effect-without-catch
+  src/components/dashboard-shell.tsx:197
+⚠ Intl formatter rebuilt each call
+  react-doctor/js-hoist-intl
+  src/components/dashboard-shell.tsx:210
+⚠ Pure function rebuilt every render ×3
+  react-doctor/prefer-module-scope-pure-function
+  src/components/dashboard-shell.tsx:223
+  src/components/dashboard.tsx:100
+  src/components/settings-screen.tsx:250
+⚠ Plain img ships unoptimized images
+  react-doctor/nextjs-no-img-element
+  src/components/dashboard-shell.tsx:247
+⚠ Heavy library loaded eagerly
+  react-doctor/prefer-dynamic-import
+  src/components/dashboard.tsx:10
+⚠ Many related useState calls ×2
+  react-doctor/prefer-useReducer
+  src/components/dashboard.tsx:42
+  src/components/settings-screen.tsx:54
+⚠ State initializer runs on every render
+  react-doctor/rerender-lazy-state-init
+  src/components/dashboard.tsx:48
+⚠ Missing effect dependencies ×4
+  react-doctor/exhaustive-deps
+  src/components/dashboard.tsx:73
+  src/components/dashboard.tsx:243
+  src/components/profile-screen.tsx:207
+  src/components/settings-screen.tsx:125
+⚠ Plain anchor reloads internal Next.js links
+  react-doctor/nextjs-no-a-element
+  src/components/dashboard.tsx:123
+⚠ Locale/timezone formatting during render ×3
+  react-doctor/no-locale-format-in-render
+  src/components/dashboard.tsx:338
+  src/components/dashboard.tsx:341
+  src/components/dashboard.tsx:353
+⚠ Static value rebuilt every render
+  react-doctor/prefer-module-scope-static-value
+  src/components/dashboard.tsx:372
+⚠ Control missing accessible label ×2
+  react-doctor/control-has-associated-label
+  src/components/dashboard.tsx:374
+  src/components/dashboard.tsx:411
+⚠ Prop derived into useState
+  react-doctor/no-derived-useState
+  src/components/onboarding.tsx:13
+⚠ Radio input missing name ×2
+  react-doctor/radio-input-missing-name
+  src/components/onboarding.tsx:56
+  src/components/onboarding.tsx:57
+⚠ Large component is hard to read and change ×2
+  react-doctor/no-giant-component
+  src/components/profile-screen.tsx:176
+  src/components/settings-screen.tsx:54
+⚠ Array index used as a key ×2
+  react-doctor/no-array-index-as-key
+  src/components/profile-screen.tsx:492
+  src/components/profile-screen.tsx:599
+⚠ Dialog without accessible name ×2
+  react-doctor/dialog-has-accessible-name
+  src/components/profile-screen.tsx:548
+  src/components/profile-screen.tsx:558
+⚠ Custom modal instead of dialog ×2
+  react-doctor/prefer-html-dialog
+  src/components/profile-screen.tsx:548
+  src/components/profile-screen.tsx:558
+⚠ Array lookup inside a loop
+  react-doctor/js-set-map-lookups
+  src/components/profile-screen.tsx:587
+⚠ Duplicated JSX structure
+  react-doctor/duplicate-jsx-subtree
+  src/components/profile-screen.tsx:609
+⚠ State only used in handlers
+  react-doctor/rerender-state-only-in-handlers
+  src/components/settings-screen.tsx:89
+⚠ Unguarded numeric parse of an input value ×2
+  react-doctor/no-unguarded-numeric-input-parse
+  src/components/settings-screen.tsx:509
+  src/components/settings-screen.tsx:510
+✖ Effect subscription or timer never cleaned up
+  react-doctor/effect-needs-cleanup
+  src/lib/use-autosave.ts:63
+⚠ State adjusted after a prop changes ×3
+  react-doctor/no-adjust-state-on-prop-change
+  src/lib/use-autosave.ts:72
+  src/lib/use-autosave.ts:78
+  src/lib/use-autosave.ts:81
+
+  ────────────────────────────────────────────────────────────
+
+  Share: https://react.doctor/share?p=timelock-v&s=35&e=2&w=67&f=11
+  Tell others how you did on socials
+
+  Docs: https://react.doctor/docs
+  Learn more about fixing issues, setting up CI/CD, and
+  configuring rules with a config file
+
+  GitHub: https://github.com/millionco/react-doctor
+  Report issues and star the repository!
+

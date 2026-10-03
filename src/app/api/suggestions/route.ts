@@ -1,8 +1,7 @@
-import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { findRecentActivities, createManySuggestions, findSuggestionsByGeneration, findRecentSuggestions } from "@/lib/data";
 import { buildSuggestionsUserPrompt, SUGGESTIONS_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +21,7 @@ const suggestionSchema = z.object({
 });
 
 type Suggestion = z.infer<typeof suggestionSchema>;
-type Provider = "OPENAI" | "OPENROUTER" | "NVIDIA_NIM" | "CUSTOM" | "ANTHROPIC" | "GOOGLE_GEMINI" | "OLLAMA";
+type Provider = "OPENAI" | "OPENROUTER" | "NVIDIA_NIM" | "CUSTOM" | "ANTHROPIC" | "GOOGLE_GEMINI" | "OLLAMA" | "OPENCODE";
 
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -43,7 +42,7 @@ function checkRateLimit(userId: string) {
 }
 
 function asProvider(value: string | null | undefined): Provider | null {
-  return value && ["OPENAI", "OPENROUTER", "NVIDIA_NIM", "CUSTOM", "ANTHROPIC", "GOOGLE_GEMINI", "OLLAMA"].includes(value)
+  return value && ["OPENAI", "OPENROUTER", "NVIDIA_NIM", "CUSTOM", "ANTHROPIC", "GOOGLE_GEMINI", "OLLAMA", "OPENCODE"].includes(value)
     ? value as Provider
     : null;
 }
@@ -60,7 +59,8 @@ function defaultModel(provider: Provider) {
     CUSTOM: "gpt-4o-mini",
     ANTHROPIC: "claude-3-5-haiku-latest",
     GOOGLE_GEMINI: "gemini-1.5-flash",
-    OLLAMA: "llama3.2"
+    OLLAMA: "llama3.2",
+    OPENCODE: "deepseek-v4-flash"
   };
   return models[provider];
 }
@@ -73,7 +73,8 @@ function apiKeyFor(provider: Provider) {
     CUSTOM: process.env.CUSTOM_AI_API_KEY ?? process.env.AI_API_KEY,
     ANTHROPIC: process.env.ANTHROPIC_API_KEY,
     GOOGLE_GEMINI: process.env.GEMINI_API_KEY ?? process.env.GOOGLE_GEMINI_API_KEY,
-    OLLAMA: process.env.OLLAMA_API_KEY
+    OLLAMA: process.env.OLLAMA_API_KEY,
+    OPENCODE: process.env.OPENCODE_API_KEY
   };
   return keys[provider];
 }
@@ -81,8 +82,9 @@ function apiKeyFor(provider: Provider) {
 function openAiUrl(provider: Provider, baseUrl?: string | null) {
   const defaults: Record<Exclude<Provider, "ANTHROPIC" | "GOOGLE_GEMINI" | "OLLAMA">, string> = {
     OPENAI: "https://api.openai.com/v1/chat/completions",
-    OPENROUTER: "https://openrouter.ai/api/v1/chat/completions",
-    NVIDIA_NIM: "https://integrate.api.nvidia.com/v1/chat/completions",
+    OPENROUTER: process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1/chat/completions",
+    NVIDIA_NIM: process.env.NVIDIA_BASE_URL ?? "https://integrate.api.nvidia.com/v1/chat/completions",
+    OPENCODE: process.env.OPENCODE_BASE_URL ?? "https://opencode.ai/zen/v1",
     CUSTOM: process.env.CUSTOM_AI_BASE_URL ?? "http://127.0.0.1:11434/v1/chat/completions"
   };
   const value = baseUrl || defaults[provider as Exclude<Provider, "ANTHROPIC" | "GOOGLE_GEMINI" | "OLLAMA">];
@@ -127,7 +129,7 @@ function parseSuggestions(text: string) {
   return values;
 }
 
-function valueArray(value: Prisma.JsonValue | null | undefined) {
+function valueArray(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
@@ -220,8 +222,8 @@ function safeProfile(user: Record<string, any>) {
 async function persistSuggestions(userId: string, values: Suggestion[], source: "ai" | "rule") {
   const generationId = crypto.randomUUID();
   try {
-    await prisma.suggestion.createMany({
-      data: values.map((value) => ({
+    await createManySuggestions(
+      values.map((value) => ({
         userId,
         generationId,
         title: value.title,
@@ -232,8 +234,8 @@ async function persistSuggestions(userId: string, values: Suggestion[], source: 
         suggestedTime: value.time ?? null,
         source
       }))
-    });
-    return prisma.suggestion.findMany({ where: { userId, generationId }, orderBy: { createdAt: "asc" } });
+    );
+    return findSuggestionsByGeneration(userId, generationId);
   } catch (error) {
     console.error("Could not persist suggestions:", error);
     return values.map((value, index) => ({ ...value, id: `transient-${generationId}-${index}`, generationId, source }));
@@ -257,18 +259,13 @@ export async function POST(request: Request) {
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const now = new Date();
-  const history = await prisma.activity.findMany({
-    where: { userId: user.id, startAt: { gte: sevenDaysAgo, lte: now } },
-    include: { category: true },
-    orderBy: { startAt: "desc" },
-    take: 100
-  });
+  const history = await findRecentActivities(user.id, sevenDaysAgo, now, 100);
   const historyJson = history.map((activity) => ({
     title: activity.title,
     category: activity.category?.name ?? null,
     status: activity.status,
-    startAt: activity.startAt.toISOString(),
-    endAt: activity.endAt.toISOString(),
+    startAt: new Date(activity.startAt).toISOString(),
+    endAt: new Date(activity.endAt).toISOString(),
     points: activity.points
   }));
   const profile = safeProfile(user);
@@ -316,10 +313,6 @@ export async function GET() {
   } catch {
     return NextResponse.json({ error: "Sesión no válida." }, { status: 401 });
   }
-  const suggestions = await prisma.suggestion.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    take: 5
-  });
+  const suggestions = await findRecentSuggestions(user.id, 5);
   return NextResponse.json({ suggestions, source: suggestions[0]?.source ?? "rule" });
 }

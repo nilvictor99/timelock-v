@@ -82,13 +82,43 @@ Cada ejecución crea un archivo Markdown en `logs/`:
 
 Los registros se conservan como auditoría intencional. Los recursos temporales de ejecución se guardan en `.timelock-v/`; `clean.sh` gestiona el flujo local y `clean-docker.sh` gestiona exclusivamente el flujo Docker.
 
+## Migraciones y seeders
+
+La base de datos PostgreSQL se gestiona con migraciones y seeders SQL/TS estilo Laravel, sin ORM. Cada migración es un archivo SQL con sección `-- UP` implícita y `-- DOWN` para rollback; los seeders son funciones TypeScript.
+
+```text
+database/
+├── migrations/     Migraciones SQL con prefijo numérico (00001_initial_schema.sql)
+└── seeders/        Seeders TypeScript para datos iniciales
+```
+
+Comandos (CLI `tl`, disponible globalmente con `npm link`):
+
+- `tl migrate [--seed]` — aplica migraciones pendientes (y siembra con `--seed`).
+- `tl status` — muestra qué migraciones están aplicadas y cuáles no (`tl st`).
+- `tl rollback [N]` — revierte el último lote (o N lotes con `--steps N`; alias `tl rb`).
+- `tl seed` — ejecuta los seeders pendientes.
+- `tl fresh [--seed]` — (solo local) borra tablas, re-migra y, con `--seed`, siembra (`tl f`, pide confirmación).
+- `tl check` — diagnostica la conexión PostgreSQL.
+- `tl make:migration <nombre>` / `tl make:seeder <nombre>` — generan archivos numerados automáticamente.
+
+Los `npm run db:*` (`db:migrate`, `db:rollback`, `db:status`, `db:seed`, `db:refresh`) quedan como
+equivalente para entornos sin `tl`.
+
+El control de estado vive en las tablas `_migrations` y `_seeders`. Al aplicar, solo se
+ejecuta la sección UP de cada migración; la sección `-- DOWN` es exclusiva de `tl rollback`.
+
+Para crear una migración nueva: `tl make:migration <nombre>` añade
+`database/migrations/00NNN_<nombre>.sql` con `CREATE`/`ALTER` y una sección final `-- DOWN`,
+luego ejecuta `tl migrate`.
+
 ## Estructura
 
 ```text
 src/app/              App Router, layout, estilos y API routes
 src/components/       Dashboard y componentes UI reutilizables
-src/lib/              Prisma y utilidades
-prisma/               Esquema PostgreSQL y seed
+src/lib/              Cliente PostgreSQL (pg), repos, auth, utilidades, i18n, AI
+database/             Migraciones SQL + seeders (gestión estilo Laravel)
 docker-compose.yml    PostgreSQL + aplicación
 Dockerfile            Build standalone de Next.js
 ```

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# TimeLock-v CLI: resuelve la raíz del proyecto (sigue symlinks de npm link) y delega en scripts/tl.ts.
+if command -v readlink >/dev/null 2>&1; then
+  __src="$(readlink -f "${BASH_SOURCE[0]}")"
+else
+  __src="${BASH_SOURCE[0]}"
+fi
+__dir="$(cd "$(dirname "$__src")" && pwd)"
+__root="$(cd "$__dir/.." && pwd)"
+
+cd "$__root"
+
+if [[ ! -x "$__root/node_modules/.bin/tsx" ]]; then
+  echo "tl: no se encontró 'tsx'. Ejecuta 'npm install' primero." >&2
+  exit 1
+fi
+
+exec "$__root/node_modules/.bin/tsx" "$__root/scripts/tl.ts" "$@"

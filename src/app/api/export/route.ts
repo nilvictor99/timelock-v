@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { findActivitiesByUserRange } from "@/lib/data";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -18,14 +18,7 @@ export async function GET(request: Request) {
     if ((from && Number.isNaN(from.getTime())) || (to && Number.isNaN(to.getTime()))) {
       return NextResponse.json({ error: "Rango de fechas no válido." }, { status: 400 });
     }
-    const activities = await prisma.activity.findMany({
-      where: {
-        userId: user.id,
-        ...(from || to ? { startAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {})
-      },
-      include: { category: true },
-      orderBy: { startAt: "asc" }
-    });
+    const activities = await findActivitiesByUserRange(user.id, from, to);
     const format = params.get("format") ?? "csv";
     const safeUser = {
       id: user.id,
@@ -66,7 +59,7 @@ export async function GET(request: Request) {
     }
     const csv = [
       "Actividad,Categoria,Inicio,Fin,Estado,Puntos",
-      ...activities.map((a) => [a.title, a.category?.name ?? "Sin categoría", a.startAt.toISOString(), a.endAt.toISOString(), a.status, a.points].map((v) => `"${String(v).replaceAll('"', '""')}"`).join(","))
+      ...activities.map((a) => [a.title, a.category?.name ?? "Sin categoría", new Date(a.startAt).toISOString(), new Date(a.endAt).toISOString(), a.status, a.points].map((v) => `"${String(v).replaceAll('"', '""')}"`).join(","))
     ].join("\n");
     return new NextResponse(csv, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": "attachment; filename=timelock-export.csv" } });
   } catch {

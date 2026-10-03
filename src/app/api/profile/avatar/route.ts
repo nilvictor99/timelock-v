@@ -2,8 +2,8 @@ import { randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { updateUser } from "@/lib/data";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const types = new Map([["image/jpeg", "jpg"], ["image/png", "png"], ["image/webp", "webp"]]);
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const filename = `${user.id}-${Date.now()}-${randomBytes(6).toString("hex")}.${types.get(file.type)}`;
     await writeFile(path.join(dir, filename), bytes, { flag: "wx" });
     const avatarUrl = `/uploads/${filename}`;
-    await prisma.user.update({ where: { id: user.id }, data: { avatarUrl } });
+    await updateUser(user.id, { avatarUrl });
     return NextResponse.json({ avatarUrl });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Sesión no válida." }, { status: 401 });

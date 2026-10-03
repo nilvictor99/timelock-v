@@ -25,6 +25,7 @@ const aiProviders = [
   ["ANTHROPIC", "aiAnthropic"],
   ["GOOGLE_GEMINI", "aiGemini"],
   ["OLLAMA", "aiOllama"],
+  ["OPENCODE", "aiOpencode"],
   ["CUSTOM", "aiCustom"],
 ] as const;
 

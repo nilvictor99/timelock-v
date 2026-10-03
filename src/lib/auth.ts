@@ -1,7 +1,13 @@
 import { cookies } from "next/headers";
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import {
+  createSessionRow,
+  findSessionWithUser,
+  deleteSessionByTokenHash,
+  deleteSessionsByUser,
+  touchLastAccess,
+} from "@/lib/data";
 
 export const SESSION_COOKIE = "timelock_session";
 const SESSION_DAYS = 30;
@@ -21,7 +27,7 @@ export async function verifyPassword(password: string, passwordHash: string) {
 export async function createSession(userId: string, remember = true) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + (remember ? SESSION_DAYS : 1) * 86_400_000);
-  await prisma.session.create({ data: { userId, tokenHash: hashToken(token), expiresAt } });
+  await createSessionRow(userId, hashToken(token), expiresAt);
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -36,17 +42,15 @@ export async function createSession(userId: string, remember = true) {
 export async function getCurrentUser() {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const session = await prisma.session.findUnique({
-    where: { tokenHash: hashToken(token) },
-    include: { user: true }
-  });
-  if (!session) return null;
+  const record = await findSessionWithUser(hashToken(token));
+  if (!record) return null;
+  const { session, user } = record;
   if (session.expiresAt <= new Date()) {
-    await prisma.session.delete({ where: { id: session.id } }).catch(() => undefined);
+    await deleteSessionByTokenHash(hashToken(token)).catch(() => undefined);
     return null;
   }
-  await prisma.user.update({ where: { id: session.user.id }, data: { lastAccessAt: new Date() } }).catch(() => undefined);
-  return session.user;
+  await touchLastAccess(user.id);
+  return user;
 }
 
 export async function requireUser() {
@@ -59,7 +63,7 @@ export async function deleteCurrentSession() {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (token) {
-    await prisma.session.deleteMany({ where: { tokenHash: hashToken(token) } });
+    await deleteSessionByTokenHash(hashToken(token));
   }
   store.set(SESSION_COOKIE, "", {
     httpOnly: true,
@@ -71,5 +75,5 @@ export async function deleteCurrentSession() {
 }
 
 export async function invalidateUserSessions(userId: string) {
-  await prisma.session.deleteMany({ where: { userId } });
+  await deleteSessionsByUser(userId);
 }

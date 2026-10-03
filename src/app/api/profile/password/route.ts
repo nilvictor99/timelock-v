@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSession, hashPassword, invalidateUserSessions, requireUser, verifyPassword } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { updateUser } from "@/lib/data";
 
 const passwordChangeSchema = z.object({
   currentPassword: z.string().min(1),
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await hashPassword(parsed.data.newPassword);
-  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+  await updateUser(user.id, { passwordHash });
   await invalidateUserSessions(user.id);
   await createSession(user.id);
   return NextResponse.json({ ok: true });

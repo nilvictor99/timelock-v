@@ -33,7 +33,7 @@ export const settingsUpdateSchema = z.object({
   recentActivitiesWindow: z.enum(["3", "7", "14", "30"]).or(z.number().int().refine((value) => [3, 7, 14, 30].includes(value))).optional(),
   includeCompletedHistory: z.boolean().optional(),
   profileVisibility: z.enum(["PRIVATE", "PUBLIC"]).optional(),
-  aiProvider: z.enum(["NVIDIA_NIM", "OPENROUTER", "OPENAI", "ANTHROPIC", "GOOGLE_GEMINI", "OLLAMA", "CUSTOM"]).nullable().optional(),
+  aiProvider: z.enum(["NVIDIA_NIM", "OPENROUTER", "OPENAI", "ANTHROPIC", "GOOGLE_GEMINI", "OLLAMA", "CUSTOM", "OPENCODE"]).nullable().optional(),
   aiModel: z.string().trim().max(160).nullable().optional(),
   aiBaseUrl: z.string().trim().url().max(500).nullable().optional(),
   aiTemperature: z.number().min(0).max(2).optional(),

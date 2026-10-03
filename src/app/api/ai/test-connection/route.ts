@@ -12,6 +12,7 @@ const providerSchema = z.enum([
   "GOOGLE_GEMINI",
   "OLLAMA",
   "CUSTOM",
+  "OPENCODE",
 ]);
 
 const requestSchema = z.object({
@@ -24,8 +25,9 @@ const requestSchema = z.object({
 function compatibleUrl(provider: z.infer<typeof providerSchema>, baseUrl?: string) {
   const defaults: Record<string, string> = {
     OPENAI: "https://api.openai.com/v1/chat/completions",
-    OPENROUTER: "https://openrouter.ai/api/v1/chat/completions",
-    NVIDIA_NIM: "https://integrate.api.nvidia.com/v1/chat/completions",
+    OPENROUTER: process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1/chat/completions",
+    NVIDIA_NIM: process.env.NVIDIA_BASE_URL ?? "https://integrate.api.nvidia.com/v1/chat/completions",
+    OPENCODE: process.env.OPENCODE_BASE_URL ?? "https://opencode.ai/zen/v1",
     CUSTOM: process.env.CUSTOM_AI_BASE_URL || "http://127.0.0.1:11434/v1/chat/completions",
   };
   const url = baseUrl || defaults[provider];
